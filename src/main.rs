@@ -1,29 +1,64 @@
-use std::io;
+//! This crate takes in a copied text string from ibooks from the clipboard,
+//! strips the excerpts as well as the beginning and end quotes
 
-    /* “But Georg’s friend had no inkling of this change. Earlier, perhaps the letter of condolence was the last time, he had tried to lure Georg into emigrating to Russia and expounded upon the prospects that St. Petersburg offered in precisely Georg’s line of business.”
+use copypasta::{ClipboardContext, ClipboardProvider};
 
-    Excerpt From
-    The Metamorphosis and Other Stories
-    Franz Kafka
-    This material may be protected by copyright.*/
+fn strip(input: String) -> String {
+    let mut quoted_string = input
+        .split("\n\nExcerpt From\n")
+        .next()
+        .expect("invalid split")
+        .to_string();
 
+    let mut index_of_quote_that_matches_first_opening = 1;
+    let mut last_index = 1;
 
-fn strip(iter: impl Iterator<Item = String>) -> String {
-    // turn it into a string, remove \n\nExcerpt from ...
-    let latter_half_string: String = iter.collect::<Vec<String>>().join("\n");
+    let mut stack: Vec<(usize, char)> = Vec::new();
+    quoted_string
+        .chars()
+        .enumerate()
+        .filter(|(_, c)| *c == '“' || *c == '”')
+        .for_each(|(i, c)| {
+            // not sure how else to keep track of the largest
+            last_index = i;
 
-    let quoted_string = latter_half_string.split("\n\nExcerpt From\n").next().expect("invalid split");
-    
-    // remove quotes
-    // very scuffed unicode string slicing, for some reason `“` and `”` are both 3 bytes... so to remove them, we hardcode in 3 
-    quoted_string[3..quoted_string.len()-3].to_string()
+            if c == '“' {
+                stack.push((i, c));
+            } else if let Some((i_l, c_l)) = stack.last() {
+                if *c_l == '“' {
+                    if *i_l == 0 {
+                        index_of_quote_that_matches_first_opening = i;
+                    }
+                    stack.pop();
+                } else {
+                    stack.push((i, c));
+                }
+            }  else {
+                stack.push((i, c));
+            }
+        });
+
+    // queue all remaining quotes on the stack to be straight up deleted from the string
+    // I don't think it's ever possible to have > 1 quote left at the end, and all dangling quotes should also be at the beginning or end, I think.
+    // again, number of characters does not equal length of string, so basically never modify string directly if you can help it.
+    if let Some((i, _)) = stack.last() {
+        if *i == 0 {
+            quoted_string.remove(0);
+        } else {
+            quoted_string.pop();
+        }
+    } else if index_of_quote_that_matches_first_opening == last_index {
+        quoted_string.pop();
+        quoted_string.remove(0);
+    }
+    quoted_string
 }
 
 fn main() {
-    // receive input from stdin
-    let input_iter = io::stdin().lines().filter_map(|l|l.ok());
-
-    println!("{}", strip(input_iter));
+    let mut ctx = ClipboardContext::new().expect("error creating clipboard context");
+    let clipboard_contents = ctx.get_contents().expect("error getting clipboard content");
+    let res = strip(clipboard_contents);
+    ctx.set_contents(res).expect("error setting clipboard");
 }
 
 #[cfg(test)]
@@ -32,13 +67,14 @@ mod test {
 
     #[test]
     fn test_ex() {
-        let input: String = std::fs::read_to_string("test/test_cases.txt").expect("error reading test file");
+        let input: String =
+            std::fs::read_to_string("test/test_cases.txt").expect("error reading test file");
         let mut iter = input.split("\n=====\n");
 
         while let Some(before) = iter.next() {
             let after = iter.next().expect("error with test cases");
 
-            assert_eq!(after, strip(before.lines().map(|l|l.to_string())));
+            assert_eq!(after, strip(before.to_string()));
         }
     }
 }
