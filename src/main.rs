@@ -4,11 +4,15 @@
 use copypasta::{ClipboardContext, ClipboardProvider};
 
 fn strip(input: String) -> String {
-    let mut quoted_string = input
-        .split("\n\nExcerpt From\n")
-        .next()
-        .expect("invalid split")
-        .to_string();
+    let mut splits = input.split("\n\nExcerpt From\n");
+
+    let mut quoted_string = splits.next().unwrap().to_string();
+
+    // if there's more than 1 split or less than 1 split, do not run the
+    // program, leave text untouched
+    if splits.count() != 1 {
+        return input;
+    }
 
     let mut index_of_quote_that_matches_first_opening = 1;
     let mut last_index = 1;
@@ -33,7 +37,7 @@ fn strip(input: String) -> String {
                 } else {
                     stack.push((i, c));
                 }
-            }  else {
+            } else {
                 stack.push((i, c));
             }
         });

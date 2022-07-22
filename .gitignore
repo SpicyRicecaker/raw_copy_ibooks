@@ -1,1 +1,6 @@
 /target
+
+/.cargo
+/fleet.toml
+
+.DS_Store
