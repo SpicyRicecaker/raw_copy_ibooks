@@ -1,0 +1,26 @@
+// allowed values are WORD DEFINITION READING EXAMPLE
+// type can be basic or whatever
+
+===basic with no context
+basic
+---
+{definition}
+---
+{word}
+{reading}
+
+{example}
+---
+===
+
+===cloze with context
+cloze
+---
+{definition}
+{example}
+---
+{reading}
+---
+===
+
+// actually cloze implies context and basic implies no context so

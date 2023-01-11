@@ -1,9 +1,30 @@
 [package]
-name = "raw_copy_ibooks"
+name = "ripbk"
 version = "0.1.0"
+authors = ["Andy Li <awesomenessisgodlen@gmail.com>"]
+description = """ripbk is a command line tool that copies text from books without surrounding whitespace"""
+documentation = "https://github.com/SpicyRicecaker/ripbk"
+homepage = "https://github.com/SpicyRicecaker/ripbk"
+repository = "https://github.com/SpicyRicecaker/ripbk"
+keywords = ["book", "copy"]
+categories = ["command-line-utilities", "text-processing"]
+license = "MIT"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+path = "cli/src/main.rs"
+name = "ripbk"
+
+[workspace]
+members = ["library", "cli"]
 
 [dependencies]
-copypasta = "0.8.1"
+clap = { version = "4.0.32", features = ["cargo"] }
+arboard = "3.2.0"
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.91"
+dirs = "4.0.0"
+ripbk-lib = { version = "*", path = "library" }
+ripbk-cli = { version = "*", path = "cli"}
+reqwest = { version = "0.11.13", features = ["blocking"] }
+regex = "1.7.1"
